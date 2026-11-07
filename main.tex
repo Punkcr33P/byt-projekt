@@ -9,7 +9,7 @@
 
 \usepackage{hyperref}
 \usepackage{booktabs}
-
+\usepackage{pdfpages}
 \hypersetup{
     colorlinks=true,
     linkcolor=black,
@@ -24,7 +24,7 @@
     \centering
     \vspace*{2cm}
     
-    {\scshape\Large Przedmiot: BYT (Budowa i Utrzymanie Oprogramowania) \par}
+    {\scshape\Large Przedmiot: BYT (Budowa i integracja systemów informatycznych) \par}
     \vspace{1.5cm}
     
     {\Huge\bfseries Dokumentacja Projektowa\par}
@@ -52,8 +52,6 @@
 \end{titlepage}
 
 \tableofcontents
-\newpage
-\listoffigures
 \newpage
 
 \section{Konwencje dokumentacyjne}
@@ -86,5 +84,30 @@ System będzie integrować się z istniejącym planem zajęć uczelni, aby unikn
 \end{figure}
 
 Jak widać na Rysunku \ref{fig:diagram_klas}, struktura opiera się na klasie asocjacji \texttt{Rezerwacja}, która łączy \texttt{Uzytkownika} z konkretnym \texttt{Zasobem}. Klasy te posiadają odpowiednie atrybuty i metody (np. \texttt{\_limitZasobow\_} czy \texttt{czasTrwania}), zgodnie z wymaganiami projektowymi.
+\section{Wymagania Systemowe}
 
+\subsection{Wymagania funkcjonalne}
+\begin{itemize}
+    \item Wymóg autoryzacji: dostęp do przeglądania i rezerwacji zasobów jest możliwy tylko dla zalogowanych użytkowników.
+    \item System umożliwia \textit{Studentom} i \textit{Wykładowcom} rezerwację dostępnych sal i sprzętu w wybranym terminie.
+    \item System automatycznie wysyła powiadomienia e-mail do użytkowników o zbliżającym się terminie rezerwacji.
+    \item System pozwala \textit{Administratorom} na generowanie miesięcznych raportów wykorzystania zasobów.
+\end{itemize}
+
+\subsection{Wymagania niefunkcjonalne}
+\begin{itemize}
+    \item Aplikacja musi wspierać jednoczesne użytkowanie przez 2000 użytkowników bez odczuwalnych spadków wydajności.
+    \item Czas ładowania strony głównej nie może przekroczyć 1.5 sekundy przy standardowych szybkościach transferu.
+    \item Wszyscy użytkownicy muszą korzystać z 2FA podczas autentykacji.
+    \item Wszystkie dane osobowe muszą być szyfrowane standardem AES-256.
+    \item W przypadku awarii systemu, czas przywrócenia pełnej sprawności wraz z danymi nie powinien przekroczyć 24 godzin.
+\end{itemize}
+
+\newpage
+\section{Diagram Przypadków Użycia}
+Poniżej przedstawiono diagram przypadków użycia oraz zestawienie aktorów i przypadków wygenerowane w programie Enterprise Architect.
+
+\includepdf[pages=-]{diagram_uc.pdf}
+\listoffigures
+\newpage
 \end{document}
