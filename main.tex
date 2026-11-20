@@ -108,6 +108,133 @@ Jak widać na Rysunku \ref{fig:diagram_klas}, struktura opiera się na klasie as
 Poniżej przedstawiono diagram przypadków użycia oraz zestawienie aktorów i przypadków wygenerowane w programie Enterprise Architect.
 
 \includepdf[pages=-]{diagram_uc.pdf}
+\newpage
+\section{Scenariusze Przypadków Użycia}
+Poniżej przedstawiono szczegółowe scenariusze dla pięciu kluczowych przypadków użycia systemu. Scenariusz dla przypadku \textbf{Rezerwacja zasobu} został zrealizowany w narzędziu Enterprise Architect i zawarty w powyższym raporcie (strony 4--5 eksportu EA). Pozostałe cztery przypadki użycia opisano tekstowo poniżej, uwzględniając również zagnieżdżone (podwójne) przepływy alternatywne.
+
+\subsection{Scenariusz 1: Anulowanie rezerwacji}
+\begin{enumerate}
+    \item \textbf{Aktor:} \textit{Student} lub \textit{Wykładowca}.
+    \item \textbf{Cel i kontekst:} Umożliwienie użytkownikowi rezygnacji z wcześniej zarezerwowanej sali lub sprzętu, aby zwolnić termin dla innych osób.
+    \item \textbf{Założenia:} Aktor może w dowolnym momencie przerwać proces anulowania - system wraca wówczas do stanu pierwotnego bez usuwania rezerwacji. Każda próba anulowania jest rejestrowana w logach systemowych.
+    \item \textbf{Wymagania wstępne:} Aktor jest zalogowany w systemie (z użyciem 2FA) oraz posiada co najmniej jedną aktywną, nadchodzącą rezerwację.
+    \item \textbf{Podstawowy przepływ zdarzeń:}
+    \begin{enumerate}
+        \item Aktor przechodzi do zakładki \textbf{Moje rezerwacje}.
+        \item System wyświetla listę aktywnych rezerwacji przypisanych do konta aktora.
+        \item Aktor wybiera konkretną rezerwację i klika przycisk \textbf{Anuluj rezerwację}.
+        \item System wyświetla okno z prośbą o potwierdzenie operacji.
+        \item Aktor zatwierdza anulowanie przyciskiem \textbf{Potwierdź}.
+        \item System zmienia status rezerwacji na anulowaną, zwalnia zasób w kalendarzu oraz wysyła automatyczne powiadomienie e-mail z potwierdzeniem.
+    \end{enumerate}
+    \item \textbf{Alternatywne przepływy zdarzeń:}
+    \begin{itemize}
+        \item \textbf{5a. Próba anulowania po upływie regulaminowego czasu (np. mniej niż 15 minut przed rozpoczęciem):}
+        \begin{enumerate}
+            \item System wykrywa przekroczenie limitu czasu na standardowe anulowanie i wyświetla ostrzeżenie o możliwym odnotowaniu późnej rezygnacji.
+            \item System pyta aktora, czy chce mimo to zwolnić zasób.
+            \item \textbf{5a.1. Aktor rezygnuje z anulowania (podwójne rozgałęzienie):} Aktor klika \textbf{Powrót}, a system zamyka okno i pozostawia rezerwację jako aktywną.
+            \item \textbf{5a.2. Aktor podtrzymuje decyzję (podwójne rozgałęzienie):} Aktor klika \textbf{Anuluj mimo to}, system zwalnia zasób, zapisuje flagę późnego anulowania w historii użytkownika i wysyła powiadomienie e-mail.
+        \end{enumerate}
+        \item \textbf{6a. Błąd wysyłki powiadomienia e-mail:}
+        \begin{enumerate}
+            \item Serwer pocztowy nie odpowiada w trakcie realizacji kroku 6.
+            \item System mimo to zapisuje anulowanie rezerwacji, kolejkuje wiadomość do ponownej wysyłki i wyświetla komunikat o poprawnym zwolnieniu zasobu.
+        \end{enumerate}
+    \end{itemize}
+    \item \textbf{Wymagania końcowe:} Rezerwacja zostaje oznaczona jako anulowana, zasób jest ponownie dostępny do rezerwacji w danym terminie, a użytkownik otrzymuje potwierdzenie e-mail.
+\end{enumerate}
+
+\subsection{Scenariusz 2: Zgłoszenie awarii sprzętu}
+\begin{enumerate}
+    \item \textbf{Aktor:} \textit{Wykładowca}.
+    \item \textbf{Cel i kontekst:} Szybkie poinformowanie działu technicznego o usterce sprzętu (np. projektora, gogli VR) w celu naprawy i uniknięcia rezerwacji niesprawnych urządzeń.
+    \item \textbf{Założenia:} Przerwanie formularza przed wysłaniem nie powoduje zapisania zgłoszenia. System rejestruje datę, godzinę oraz autora każdego wysłanego zgłoszenia.
+    \item \textbf{Wymagania wstępne:} \textit{Wykładowca} jest zalogowany w systemie, a zgłaszany sprzęt znajduje się w bazie zasobów uczelni.
+    \item \textbf{Podstawowy przepływ zdarzeń:}
+    \begin{enumerate}
+        \item Aktor wyszukuje uszkodzony zasób na liście sprzętu i wybiera opcję \textbf{Zgłoś awarię}.
+        \item System wyświetla formularz zgłoszenia usterki.
+        \item Aktor wprowadza opis problemu, wybiera poziom krytyczności awarii (np. \textbf{Krytyczna} lub \textbf{Drobna}) i opcjonalnie załącza zdjęcie.
+        \item Aktor klika przycisk \textbf{Wyślij zgłoszenie}.
+        \item System waliduje poprawność danych, zapisuje zgłoszenie w bazie i powiadamia \textit{Administratora}.
+        \item System wyświetla potwierdzenie przyjęcia zgłoszenia wraz z jego numerem.
+    \end{enumerate}
+    \item \textbf{Alternatywne przepływy zdarzeń:}
+    \begin{itemize}
+        \item \textbf{5a. Awaria oznaczona jako krytyczna (rozszerzenie: Blokowanie uszkodzonego sprzętu):}
+        \begin{enumerate}
+            \item System automatycznie uruchamia mechanizm blokowania uszkodzonego sprzętu i tymczasowo wyłącza zasób z puli dostępnej do nowych rezerwacji.
+            \item System sprawdza, czy na dany sprzęt istnieją aktywne, przyszłe rezerwacje.
+            \item \textbf{5a.1. Wykryto nadchodzące rezerwacje (podwójne rozgałęzienie):} System automatycznie wysyła powiadomienie e-mail do poszkodowanych użytkowników z informacją o niedostępności sprzętu oraz alert do \textit{Administratora}.
+        \end{enumerate}
+        \item \textbf{5b. Niepoprawnie wypełniony formularz lub zbyt duży załącznik:}
+        \begin{enumerate}
+            \item System podświetla błędne pola i wyświetla komunikat o wymaganych poprawkach.
+            \item Aktor poprawia dane i wraca do kroku 4.
+        \end{enumerate}
+    \end{itemize}
+    \item \textbf{Wymagania końcowe:} Zgłoszenie awarii zostaje zapisane w systemie i przekazane do \textit{Administratora}. W przypadku awarii krytycznej sprzęt jest zablokowany przed dalszym rezerwowaniem.
+\end{enumerate}
+
+\subsection{Scenariusz 3: Zarządzanie stanem sprzętu}
+\begin{enumerate}
+    \item \textbf{Aktor:} \textit{Administrator}.
+    \item \textbf{Cel i kontekst:} Aktualizacja statusu technicznego sprzętu (np. sprawny, w serwisie, wycofany z użytku) w celu utrzymania aktualnej puli zasobów uczelni.
+    \item \textbf{Założenia:} Zamknięcie panelu przed zapisaniem zmian przywraca poprzedni stan zasobu. Każda zmiana statusu jest logowana wraz z identyfikatorem \textit{Administratora}.
+    \item \textbf{Wymagania wstępne:} \textit{Administrator} jest zalogowany w systemie i posiada uprawnienia do edycji zasobów.
+    \item \textbf{Podstawowy przepływ zdarzeń:}
+    \begin{enumerate}
+        \item Aktor otwiera zakładkę \textbf{Zarządzanie zasobami} w panelu administracyjnym.
+        \item System wyświetla listę wszystkich zasobów wraz z ich aktualnym statusem i otwartymi zgłoszeniami awarii.
+        \item Aktor wybiera konkretny zasób i klika przycisk \textbf{Zmień status}.
+        \item Aktor wybiera nowy status (np. \textbf{W serwisie} lub \textbf{Dostępny}), wpisuje notatkę techniczną i klika \textbf{Zapisz}.
+        \item System aktualizuje stan zasobu w bazie danych i wyświetla komunikat o powodzeniu operacji.
+    \end{enumerate}
+    \item \textbf{Alternatywne przepływy zdarzeń:}
+    \begin{itemize}
+        \item \textbf{4a. Wyłączenie sprzętu posiadającego aktywne rezerwacje (status „W serwisie” lub „Wycofany”):}
+        \begin{enumerate}
+            \item System wykrywa kolidujące rezerwacje w kalendarzu i wyświetla ich listę \textit{Administratorowi}.
+            \item System wymaga decyzji, czy anulować te rezerwacje automatycznie.
+            \item \textbf{4a.1. Administrator potwierdza anulowanie (podwójne rozgałęzienie):} System zmienia status sprzętu, anuluje kolidujące rezerwacje i rozsyła powiadomienia e-mail do użytkowników.
+            \item \textbf{4a.2. Administrator przerywa operację (podwójne rozgałęzienie):} System cofa zmianę statusu i powraca do kroku 2.
+        \end{enumerate}
+    \end{itemize}
+    \item \textbf{Wymagania końcowe:} Status wybranego sprzętu w bazie danych zostaje zaktualizowany, a zasób zostaje odpowiednio włączony lub wyłączony z możliwości rezerwacji.
+\end{enumerate}
+
+\subsection{Scenariusz 4: Generowanie raportu użycia}
+\begin{enumerate}
+    \item \textbf{Aktor:} \textit{Administrator}.
+    \item \textbf{Cel i kontekst:} Uzyskanie miesięcznego lub okresowego zestawienia statystyk wykorzystania sal i sprzętu w celu analizy obłożenia oraz planowania zakupów.
+    \item \textbf{Założenia:} Przerwanie generowania raportu przed jego pobraniem nie zmienia stanu bazy danych. System zapisuje w logach informację o wygenerowaniu raportu.
+    \item \textbf{Wymagania wstępne:} \textit{Administrator} jest zalogowany w systemie, a w bazie danych istnieją dane historyczne dotyczące rezerwacji.
+    \item \textbf{Podstawowy przepływ zdarzeń:}
+    \begin{enumerate}
+        \item Aktor przechodzi do sekcji \textbf{Raporty i statystyki}.
+        \item System wyświetla formularz konfiguracji parametrów raportu.
+        \item Aktor wybiera zakres dat, typ zasobów (sale, sprzęt lub wszystkie) oraz format pliku wyjściowego (np. PDF lub CSV).
+        \item Aktor klika przycisk \textbf{Generuj raport}.
+        \item System agreguje dane o liczbie rezerwacji, czasie użycia i awariach, tworzy dokument i wyświetla jego podgląd wraz z przyciskiem \textbf{Pobierz}.
+        \item Aktor pobiera wygenerowany plik na swoje urządzenie.
+    \end{enumerate}
+    \item \textbf{Alternatywne przepływy zdarzeń:}
+    \begin{itemize}
+        \item \textbf{5a. Brak danych w wybranym okresie:}
+        \begin{enumerate}
+            \item System nie znajduje żadnych rezerwacji spełniających kryteria i wyświetla komunikat o braku danych.
+            \item System proponuje zmianę filtrów.
+            \item \textbf{5a.1. Aktor zmienia zakres dat (podwójne rozgałęzienie):} Aktor modyfikuje kryteria i wraca do kroku 4.
+            \item \textbf{5a.2. Aktor rezygnuje (podwójne rozgałęzienie):} Aktor zamyka formularz, a system kończy przypadek bez tworzenia pliku.
+        \end{enumerate}
+        \item \textbf{5b. Zbyt duży zakres danych powodujący przekroczenie czasu przetwarzania:}
+        \begin{enumerate}
+            \item System przełącza generowanie w tryb asynchroniczny i informuje, że link do pobrania raportu zostanie wysłany na adres e-mail \textit{Administratora}.
+        \end{enumerate}
+    \end{itemize}
+    \item \textbf{Wymagania końcowe:} System wygenerował i udostępnił raport użycia zasobów zgodny z wybranymi parametrami oraz odnotował zdarzenie w rejestrze operacji.
+\end{enumerate}
 \listoffigures
 \newpage
 \end{document}
